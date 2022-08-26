@@ -1,0 +1,4 @@
+python >3.8
+deskew # using .whl file
+cv2 4.0.1
+plt 3.5.1

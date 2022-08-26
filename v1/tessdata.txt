@@ -1,0 +1,33 @@
+C:\Program Files\Tesseract-OCR\tessdata
+
+
+
+生成font_properties檔案：（該檔案沒有後綴名）
+> echo "mks02 0 0 0 0 0" >font_properties
+
+生成.tr訓練檔案
+> tesseract mkseng.mks02.exp0.tif mkseng.mks02.exp0 nobatch box.train
+
+生成字符集檔案：名為“unicharset”的檔案
+> unicharset_extractor mkseng.mks02.exp0.box
+
+生成shape檔案：
+會生成 shapetable 和 zwp.unicharset 兩個檔案。 (NA)
+> shapeclustering -F font_properties -U unicharset -O mkseng.unicharset mkseng.mks02.exp0.tr
+
+生成聚字元特徵檔案
+會生成 inttemp、pffmtable、shapetable和zwp.unicharset四個檔案。
+> mftraining -F font_properties -U unicharset -O mkseng.unicharset mkseng.mks02.exp0.tr
+
+生成字元正常化特徵檔案
+會生成 normproto 檔案。
+> cntraining mkseng.mks02.exp0.tr
+
+
+合併訓練檔案
+> combine_tessdata mkseng.
+
+mkseng.mks02.exp0
+
+reference
+https://www.796t.com/content/1579626486.html
