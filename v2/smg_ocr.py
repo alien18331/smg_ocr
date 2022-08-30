@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 """
 Created on Wed Aug 24 11:09:19 2022
@@ -6,6 +7,7 @@ Created on Wed Aug 24 11:09:19 2022
 """
 
 # importing required libraries 
+import sys
 import cv2 
 import time 
 import random
@@ -28,12 +30,12 @@ import modbus_tk.defines as cst
 import modbus_tk.modbus_tcp as modbus_tcp
 
 # debug
-image_debug = True
+image_debug = False
 image_file = "./MKS.png"
 
 # parameters
 config = configparser.ConfigParser()
-config.read('config.ini')
+config.read('/home/smg/smg/ocr/v2/config.ini')
 
 windows_base    = config['general'].getboolean('windows_base')
 debug           = config['general'].getboolean('debug')
@@ -44,6 +46,7 @@ win_psm         = config['ocr'].getint('win_psm')
 
 # camera
 cameraID = config['camera'].getint('cameraID')
+wind_show = config['camera'].getboolean('windows_show')
 
 # image pre-processing
 angle           = config['img_preprocessing'].getfloat('angle')
@@ -141,15 +144,15 @@ def modbus_preprocessing(ocr_text):
 
 # define ModbusTCP with multi-threaded processing
 class ModbusTCP:
-    def __init__(self, client, port=502, slaveID=1, size=8):        
+    def __init__(self, client='127.0.0.1', port=502, slaveID=1, size=8):        
         self.client = client
         self.slaveID = slaveID
         self.port = port
         self.size = size
         self.val = 0
-                
+        
         # create modbus server
-        self.SERVER = modbus_tcp.TcpServer(address = self.client, port = int(self.port))
+        self.SERVER = modbus_tcp.TcpServer(address = '127.0.0.1', port = int(self.port))
         
         # server start
         self.SERVER.start()
@@ -164,7 +167,7 @@ class ModbusTCP:
         # reference to the thread for reading next available frame from input stream 
         self.t = Thread(target=self.holdingRegister, args=())
         self.t.daemon = True # daemon threads keep running in the background while the program is executing 
-                
+        
     # start
     def start(self):
         self.stopped = False
@@ -197,16 +200,20 @@ class WebcamStream :
         self.vcap      = cv2.VideoCapture(self.stream_id)
         if self.vcap.isOpened() is False :
             print("[Exiting]: Error accessing webcam stream.")
-            exit(0)
+            sys.exit(0)
+        self.vcap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
+        self.vcap.set(cv2.CAP_PROP_EXPOSURE, 100)
+        self.vcap.set(14, 480) # Gain
+        self.vcap.set(44, 0) # auto WB
+        
         fps_input_stream = int(self.vcap.get(5))
         print("FPS of webcam hardware/input stream: {}".format(fps_input_stream))
             
         # reading a single frame from vcap stream for initializing 
-        self.vcap.set(cv2.CAP_PROP_EXPOSURE, -4.0)
         self.grabbed , self.frame = self.vcap.read()
         if self.grabbed is False :
             print('[Exiting] No more frames to read')
-            exit(0)
+            sys.exit(0)
 
         # self.stopped is set to False when frames are being read from self.vcap stream 
         self.stopped = True 
@@ -258,12 +265,12 @@ try:
             break
         else :
             frame = webcam_stream.read() 
-        
+            
         if(image_debug):
             frame = cv2.imread(image_file)        
             # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) 
             # gray = cv2.bilateralFilter(gray, 13, 15, 15)
-        
+            
         # image pre-processing
         proced_img = img_preprocessing(frame, angle)
         
@@ -276,11 +283,11 @@ try:
             ocr_type = "--psm {}".format(win_psm)
             ocr_text = pytesseract.image_to_string(proced_img, config=ocr_type)   
         
-        # print(ocr_text.strip())
+        print(ocr_text.strip())
         
         # modbus pre-processing
-        ocr_val = modbus_preprocessing(ocr_text)
-        print("ocr_value: {}".format(ocr_val))
+        #ocr_val = modbus_preprocessing(ocr_text)
+        #print("ocr_value: {}".format(ocr_val))
         
         # modbus
         if(debug):
@@ -294,10 +301,11 @@ try:
         # time.sleep(delay) 
             num_frames_processed += 1 
             
-            cv2.imshow('frame' , proced_img)
-            key = cv2.waitKey(1)
-            if key == ord('q'):
-                break
+            if(wind_show):
+                cv2.imshow('frame' , proced_img)
+                key = cv2.waitKey(1)
+                if key == ord('q'):
+                    break
             
 except KeyboardInterrupt:    
     print("User Terminated..!")
@@ -319,6 +327,6 @@ finally:
         fps = num_frames_processed/elapsed 
         print("FPS: {} , Elapsed Time: {} , Frames Processed: {}".format(fps, elapsed, num_frames_processed))
         
-        
-        # closing all windows 
-        cv2.destroyAllWindows()
+        if(wind_show):
+            # closing all windows 
+            cv2.destroyAllWindows()
