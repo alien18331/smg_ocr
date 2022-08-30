@@ -1,0 +1,13 @@
+[Unit]
+Description=Prtg Python Server
+After=multi-user.target # when start the service
+
+[Service]
+#User=smg # comment with root
+Type=simple
+ExecStart=/usr/bin/python3 -u /home/smg/smg/ocr/v2/smg_ocr.py
+Restart=on-failure
+RestartSec=
+
+[Install]
+WanteBy=multi-user.target

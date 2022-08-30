@@ -1,0 +1,56 @@
+static ip
+/etc/dhcpcd.conf
+
+======== systemctl service ========
+/lib/systemd/system
+# create service
+[Unit]
+Description=Prtg Python Server
+After=multi-user.target # when start the service
+
+[Service]
+#User=smg # comment with root
+Type=simple
+ExecStart=/usr/bin/python3 -u /home/smg/smg/ocr/v2/smg_ocr.py
+Restart=on-failure
+RestartSec=
+
+[Install]
+WanteBy=multi-user.target
+
+#reload
+sudo systemctl daemon-reload
+
+#test
+sudo systemctl start prtg.service
+sudo systemctl status prtg
+journalctl -u prtg -r
+
+# execute on boot
+sudo systemctl enable prtg.service
+
+
+======== boot script ========
+1. create .sh file
+auto_exec.sh
+> cd /home/smg/smg/ocr/v2
+> python3 smg_ocr.py
+
+2. chmod +x auto_exec.sh
+
+3. sudo vim /etc/rc.local
+add command between fi and exit() line
+> /home/smg/auto_exec.sh start
+
+4. cd ~ && vim .profile
+add code at last of content
+> sleep 3 # auto execute sh file delay
+> lxterminal # without desktop or not
+
+# terminal pre-exec
+5. cd ~ && vim .bashrc 
+add code at last of content
+> cd /home/smg
+sudo ./auto_exec.sh
+
+6. reboot

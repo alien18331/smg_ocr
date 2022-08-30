@@ -1,4 +1,10 @@
 python >3.8
 deskew # using .whl file
-cv2 4.0.1
-plt 3.5.1
+cv2 4.0.1 <4.5.0
+matplotlib 3.5.1
+
+sudo pip3 install pytesseract
+sudo apt-get install tesseract-ocr
+
+install lib with sudo permission
+because modbus_slave need sudo permission
